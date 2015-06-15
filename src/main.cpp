@@ -4,6 +4,7 @@
 #include <set>
 #include <cassert>
 #include <cmath>
+#include <queue>
 #include <algorithm>
 #define BUFFER_SIZE 1024
 #define INFD 1e8
@@ -145,6 +146,7 @@ class Model {
   std::vector<bool> removed;
   std::vector< std::set<Edge> > face;
   std::set<Edge> edge;
+  std::priority_queue< std::pair<double, Edge> > heap;
   int faceN;
 
   double edgeLen(Edge e) {
@@ -296,17 +298,19 @@ public:
   std::pair<Edge, Vector> selectEdge(double threshold) {
     Edge idx = make_pair(-1, -1);
     Vector pos;
-    double best = INFD;
-    for (const auto &e : edge) {
-      if (edgeLen(e) > threshold) continue;
-      auto v = getPosition(e);
-      if (v.second < best) {
-        best = v.second;
-        idx = e;
-        pos = v.first;
-      }
+    std::pair<double, Edge> tmp;
+    while (!heap.empty()) {
+      tmp = heap.top();
+      heap.pop();
+      if (edge.find(tmp.second) == edge.end()) continue;
+      if (edgeLen(tmp.second) > threshold) continue;
+      auto act = getPosition(tmp.second);
+      if (fabs(act.second + tmp.first) > EPS) continue;
+      idx = tmp.second;
+      pos = act.first;
+      break;
     }
-    printf("%lf %d %d", best, idx.first, idx.second);
+    printf("%lf %d %d", -tmp.first, idx.first, idx.second);
     return std::make_pair(idx, pos);
   }
 
@@ -317,7 +321,13 @@ public:
     return 0;
   }
 
-  void removeEdge(Edge e, Vector v) {
+  void addToHeap(Edge e, double threshold) {
+    if (edgeLen(e) > threshold) return;
+    auto pos = getPosition(e);
+    heap.push(make_pair(-pos.second, e));
+  }
+
+  void removeEdge(Edge e, Vector v, double threshold) {
     std::vector<Edge> toRev;
     for (const auto &f : face[e.first]) {
       if (f.first == e.second || f.second == e.second) continue;
@@ -387,14 +397,31 @@ public:
     vertex[e.second].clear();
     removed[e.second] = true;
     face[e.second].clear();
+
+    std::set<int> neighbor;
+    for (const auto &f: face[e.first]) {
+      neighbor.insert(f.first);
+      neighbor.insert(f.second);
+    }
+    for (const auto &x : neighbor) {
+      addToHeap(make_pair(min(x, e.first), max(x, e.first)), threshold);
+    }
+  }
+
+  void buildHeap(double threshold) {
+    while (!heap.empty()) heap.pop();
+    for (const auto &e : edge) {
+      addToHeap(e, threshold);
+    }
   }
 
   void simplify(int target, double threshold) {
+    buildHeap(threshold);
     while (faceN > target) {
       printf("%c%d ", 13, faceN);
       auto e = selectEdge(threshold);
       if (e.first != make_pair(-1, -1))
-        removeEdge(e.first, e.second);
+        removeEdge(e.first, e.second, threshold);
       else {
         printf("%cERROR: No enough edges under threshold.\n", 13);
         printf("Warning: Current result will be save.\n");
