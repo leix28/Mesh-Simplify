@@ -327,6 +327,17 @@ public:
     heap.push(make_pair(-pos.second, e));
   }
 
+  void updateNeighborEdge(int v, double threshold) {
+    std::set<int> neighbor;
+    for (const auto &f : face[v]) {
+      neighbor.insert(f.first);
+      neighbor.insert(f.second);
+    }
+    for (auto x : neighbor) {
+      addToHeap(make_pair(min(x, v), max(x, v)), threshold);
+    }
+  }
+
   void removeEdge(Edge e, Vector v, double threshold) {
     std::vector<Edge> toRev;
     for (const auto &f : face[e.first]) {
@@ -403,10 +414,10 @@ public:
       neighbor.insert(f.first);
       neighbor.insert(f.second);
     }
-    for (const auto &x : neighbor) {
-      addToHeap(make_pair(min(x, e.first), max(x, e.first)), threshold);
+    for (auto nb : neighbor) {
+      updateNeighborEdge(nb, threshold);
     }
-  }
+}
 
   void buildHeap(double threshold) {
     while (!heap.empty()) heap.pop();
