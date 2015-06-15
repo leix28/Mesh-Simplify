@@ -309,29 +309,65 @@ public:
     return std::make_pair(idx, pos);
   }
 
+  bool faceReverse(Edge e, Vector v1, Vector v2) {
+    const auto &x = vertex[e.first];
+    const auto &y = vertex[e.second];
+    return innerProduct(crossProduct(x - v1, y - v1), crossProduct(x - v2, y - v2)) < 0;
+    return 0;
+  }
+
   void removeEdge(Edge e, Vector v) {
-    edge.erase(e);
-    vertex[e.first] = v;
-    vertex[e.second].clear();
-    removed[e.second] = true;
+    std::vector<Edge> toRev;
+    for (const auto &f : face[e.first]) {
+      if (f.first == e.second || f.second == e.second) continue;
+      auto reverse = faceReverse(f, vertex[e.first], v);
+      if (!reverse) continue;
+      toRev.push_back(f);
+      assert(face[f.second].find(make_pair(e.first, f.first)) != face[f.second].end());
+      face[f.second].erase(make_pair(e.first, f.first));
+      face[f.second].insert(make_pair(f.first, e.first));
+
+      assert(face[f.first].find(make_pair(f.second, e.first)) != face[f.first].end());
+      face[f.first].erase(make_pair(f.second, e.first));
+      face[f.first].insert(make_pair(e.first, f.second));
+    }
+    for (const auto &f : toRev) {
+      face[e.first].erase(f);
+      face[e.first].insert(make_pair(f.second, f.first));
+    }
+
 
     for (const auto &f : face[e.second]) {
       assert(face[f.second].find(make_pair(e.second, f.first)) != face[f.second].end());
       face[f.second].erase(make_pair(e.second, f.first));
+      auto reverse = faceReverse(f, vertex[e.second], v);
       if (f.first != e.first && f.second != e.first) {
-        face[f.second].insert(make_pair(e.first, f.first));
+        if (reverse) {
+          face[f.second].insert(make_pair(f.first, e.first));
+        } else {
+          face[f.second].insert(make_pair(e.first, f.first));
+        }
       }
 
       assert(face[f.first].find(make_pair(f.second, e.second)) != face[f.first].end());
       face[f.first].erase(make_pair(f.second, e.second));
       if (f.first != e.first && f.second != e.first) {
-        face[f.first].insert(make_pair(f.second, e.first));
+        if (reverse) {
+          face[f.first].insert(make_pair(e.first, f.second));
+        } else {
+          face[f.first].insert(make_pair(f.second, e.first));
+        }
       }
 
       if (f.first == e.first || f.second == e.first)
         faceN--;
-      else
-        face[e.first].insert(f);
+      else {
+        if (reverse) {
+          face[e.first].insert(make_pair(f.second, f.first));
+        } else {
+          face[e.first].insert(f);
+        }
+      }
 
       auto tmp = make_pair(min(e.second, f.first), max(e.second, f.first));
       if (edge.find(tmp) != edge.end())
@@ -344,6 +380,11 @@ public:
         edge.insert(make_pair(min(e.first, f.second), max(e.first, f.second)));
       }
     }
+
+    edge.erase(e);
+    vertex[e.first] = v;
+    vertex[e.second].clear();
+    removed[e.second] = true;
     face[e.second].clear();
   }
 
