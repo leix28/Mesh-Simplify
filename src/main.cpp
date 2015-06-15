@@ -267,6 +267,27 @@ public:
   }
 
   std::pair<Vector, double> getPosition(Edge e) {
+    std::set<int> neighbor1;
+    for (const auto &f : face[e.first]) {
+      neighbor1.insert(f.first);
+      neighbor1.insert(f.second);
+    }
+    std::set<int> neighbor2;
+    for (const auto &f : face[e.second]) {
+      neighbor2.insert(f.first);
+      neighbor2.insert(f.second);
+    }
+    int cnt = 0;
+    for (auto x : neighbor1) {
+      if (neighbor2.find(x) != neighbor2.end()) cnt++;
+    }
+    if (cnt > 2) {
+      return make_pair((vertex[e.first] + vertex[e.second]) / 2, -1);
+    }
+    if (cnt < 2) {
+      return make_pair((vertex[e.first] + vertex[e.second]) / 2, INFD);
+    }
+
     Matrix q(4, Vector(4, 0));
     for (const auto &f : face[e.first]) {
       auto n = crossProduct(vertex[f.first] - vertex[e.first], vertex[f.second] - vertex[e.first]);
