@@ -302,9 +302,6 @@ public:
         pos = v.first;
       }
     }
-    if (idx == make_pair(-1, -1)) {
-      printf("%cERROR: No enough edges under threshold\n", 13);
-    }
     printf("%lf %d %d", best, idx.first, idx.second);
     return std::make_pair(idx, pos);
   }
@@ -392,7 +389,13 @@ public:
     while (faceN > target) {
       printf("%c%d\t", 13, faceN);
       auto e = selectEdge(threshold);
-      removeEdge(e.first, e.second);
+      if (e.first != make_pair(-1, -1))
+        removeEdge(e.first, e.second);
+      else {
+        printf("%cERROR: No enough edges under threshold.\n", 13);
+        printf("Warning: Current result will be save.\n");
+        return;
+      }
       selfCheck();
       fflush(stdout);
     }
