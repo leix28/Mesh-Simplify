@@ -191,10 +191,12 @@ public:
       }
     }
 
-    for (const auto &x : ss)
+    for (const auto &x : ss) {
+      assert(x.first < x.second);
       assert(edge.find(x) != edge.end());
-    for (const auto &x : edge)
-      assert(ss.find(x) != ss.end());
+    }
+    //there may be some e in edge which is actually absent.
+    //(for models which are not closed)
   }
 
   void loadFromFile(std::string filename) {
@@ -303,6 +305,7 @@ public:
       tmp = heap.top();
       heap.pop();
       if (edge.find(tmp.second) == edge.end()) continue;
+      if (removed[tmp.second.first] || removed[tmp.second.second]) continue;
       if (edgeLen(tmp.second) > threshold) continue;
       auto act = getPosition(tmp.second);
       if (fabs(act.second + tmp.first) > EPS) continue;
@@ -438,7 +441,7 @@ public:
         printf("Warning: Current result will be save.\n");
         return;
       }
-      selfCheck();
+      // selfCheck();
       fflush(stdout);
     }
   }
