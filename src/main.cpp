@@ -8,6 +8,7 @@
 #define BUFFER_SIZE 1024
 #define INFD 1e8
 #define EPS 1e-8
+#define TOLERATE 2.0
 using std::min;
 using std::max;
 using std::make_pair;
@@ -282,6 +283,9 @@ public:
     } catch(...) {
       v = (vertex[e.first] + vertex[e.second]) / 2;
     }
+    if (norm(v - vertex[e.first]) + norm(v - vertex[e.second]) > TOLERATE * norm(vertex[e.first] - vertex[e.second])) {
+      v = (vertex[e.first] + vertex[e.second]) / 2;
+    }
     v.push_back(1);
     double cost = innerProduct(innerProduct(v, q), v);
     assert(cost > -EPS);
@@ -387,7 +391,7 @@ public:
 
   void simplify(int target, double threshold) {
     while (faceN > target) {
-      printf("%c%d\t", 13, faceN);
+      printf("%c%d ", 13, faceN);
       auto e = selectEdge(threshold);
       if (e.first != make_pair(-1, -1))
         removeEdge(e.first, e.second);
@@ -425,6 +429,9 @@ int main(int argc, char **argv) {
   printf("threshold: %.4lf\n", threshold);
   printf("------------------------------------\n");
 
+
+  time_t start = time(0);
+
   model.loadFromFile(inputModelFileName);
 
   int all = model.getFaceN();
@@ -437,5 +444,7 @@ int main(int argc, char **argv) {
 
   model.saveToFile(outputModelFileName);
   model.selfCheck();
+  time_t end = time(0);
+  printf("%cSave to [%s] successfully. Time %ld sec.\n", 13, outputModelFileName.c_str(), end - start);
   return 0;
 }
