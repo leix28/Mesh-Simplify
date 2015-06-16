@@ -14,13 +14,53 @@ using std::min;
 using std::max;
 using std::make_pair;
 
-typedef std::vector<double> Vector;
+
+class Vector {
+  double a[4];
+  int _size;
+public:
+  Vector() {
+    _size = 0;
+  }
+  Vector(int n) {
+    _size = n;
+  }
+  Vector(int n, double x) {
+    _size = n;
+    for (int i = 0; i < n; i++)
+      a[i] = x;
+  }
+  void swap(Vector &b) {
+    assert(b.size() == _size);
+    for (int i = 0; i < _size; i++)
+      std::swap(a[i], b.a[i]);
+  }
+  int size() const {
+    return _size;
+  }
+  void clear() {
+    _size = 0;
+  }
+  double& operator [] (int x) {
+    return a[x];
+  }
+  const double& operator [] (int x) const {
+    return a[x];
+  }
+  void push_back(double x) {
+    a[_size++] = x;
+  }
+  void pop_back() {
+    _size--;
+  }
+};
+// typedef std::vector<double> Vector;
 typedef std::vector<Vector> Matrix;
 typedef std::pair<int, int> Edge;
 
 void printVector(const Vector &v) {
-  for (auto x : v)
-    printf("%.4lf\t", x);
+  for (int i = 0; i < v.size(); i++)
+    printf("%.4lf\t", v[i]);
   printf("\n");
 }
 
@@ -31,7 +71,7 @@ void printMatrx(const Matrix &m) {
 
 double norm(const Vector &v) {
   double t = 0;
-  for (auto x : v) t += x * x;
+  for (int i = 0; i < v.size(); i++) t += v[i] * v[i];
   return sqrt(t);
 }
 
@@ -58,6 +98,15 @@ Matrix outerProduct(const Vector &a, const Vector &b) {
     for (int j = 0; j < b.size(); j++)
       c[i][j] = a[i] * b[j];
   return c;
+}
+
+void outerProductFast(const Vector &a, const Vector &b, Matrix &c) {
+  assert(a.size() == c.size());
+  if (a.size() == 0) return;
+  assert(b.size() == c[0].size());
+  for (int i = 0; i < a.size(); i++)
+    for (int j = 0; j < b.size(); j++)
+      c[i][j] += a[i] * b[j];
 }
 
 Vector innerProduct(const Vector &a, const Matrix &b) {
@@ -286,13 +335,13 @@ public:
       auto n = crossProduct(vertex[f.first] - vertex[e.first], vertex[f.second] - vertex[e.first]);
       n = n / norm(n);
       n.push_back(-innerProduct(vertex[e.first], n));
-      q = q + outerProduct(n, n);
+      outerProductFast(n, n, q);
     }
     for (const auto &f : face[e.second]) {
       auto n = crossProduct(vertex[f.first] - vertex[e.second], vertex[f.second] - vertex[e.second]);
       n = n / norm(n);
       n.push_back(-innerProduct(vertex[e.second], n));
-      q = q + outerProduct(n, n);
+      outerProductFast(n, n, q);
     }
 
     Vector v;
