@@ -60,15 +60,6 @@ Matrix outerProduct(const Vector &a, const Vector &b) {
   return c;
 }
 
-void outerProductFast(const Vector &a, const Vector &b, Matrix &c) {
-  assert(a.size() == c.size());
-  if (a.size() == 0) return;
-  assert(b.size() == c[0].size());
-  for (int i = 0; i < a.size(); i++)
-    for (int j = 0; j < b.size(); j++)
-      c[i][j] += a[i] * b[j];
-}
-
 Vector innerProduct(const Vector &a, const Matrix &b) {
   assert(a.size() == b.size());
   if (a.size() == 0) return Vector();
@@ -295,13 +286,13 @@ public:
       auto n = crossProduct(vertex[f.first] - vertex[e.first], vertex[f.second] - vertex[e.first]);
       n = n / norm(n);
       n.push_back(-innerProduct(vertex[e.first], n));
-      outerProductFast(n, n, q);
+      q = q + outerProduct(n, n);
     }
     for (const auto &f : face[e.second]) {
       auto n = crossProduct(vertex[f.first] - vertex[e.second], vertex[f.second] - vertex[e.second]);
       n = n / norm(n);
       n.push_back(-innerProduct(vertex[e.second], n));
-      outerProductFast(n, n, q);
+      q = q + outerProduct(n, n);
     }
 
     Vector v;
