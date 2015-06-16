@@ -269,26 +269,26 @@ public:
   }
 
   std::pair<Vector, double> getPosition(const Edge &e) {
-    std::set<int> neighbor1;
-    for (const auto &f : face[e.first]) {
-      neighbor1.insert(f.first);
-      neighbor1.insert(f.second);
-    }
-    std::set<int> neighbor2;
-    for (const auto &f : face[e.second]) {
-      neighbor2.insert(f.first);
-      neighbor2.insert(f.second);
-    }
-    int cnt = 0;
-    for (auto x : neighbor1) {
-      if (neighbor2.find(x) != neighbor2.end()) cnt++;
-    }
-    if (cnt > 2) {
-      return make_pair((vertex[e.first] + vertex[e.second]) / 2, -1);
-    }
-    if (cnt < 2) {
-      return make_pair((vertex[e.first] + vertex[e.second]) / 2, INFD);
-    }
+    // std::set<int> neighbor1;
+    // for (const auto &f : face[e.first]) {
+    //   neighbor1.insert(f.first);
+    //   neighbor1.insert(f.second);
+    // }
+    // std::set<int> neighbor2;
+    // for (const auto &f : face[e.second]) {
+    //   neighbor2.insert(f.first);
+    //   neighbor2.insert(f.second);
+    // }
+    // int cnt = 0;
+    // for (auto x : neighbor1) {
+    //   if (neighbor2.find(x) != neighbor2.end()) cnt++;
+    // }
+    // if (cnt > 2) {
+    //   return make_pair((vertex[e.first] + vertex[e.second]) / 2, -1);
+    // }
+    // if (cnt < 2) {
+    //   return make_pair((vertex[e.first] + vertex[e.second]) / 2, INFD);
+    // }
 
     Matrix q(4, Vector(4, 0));
     for (const auto &f : face[e.first]) {
@@ -507,7 +507,7 @@ int main(int argc, char **argv) {
   model.simplify(simple, threshold);
 
   model.saveToFile(outputModelFileName);
-  model.selfCheck();
+  // model.selfCheck();
   time_t end = time(0);
   printf("%cSave to [%s] successfully. Time %ld sec.\n", 13, outputModelFileName.c_str(), end - start);
   return 0;
