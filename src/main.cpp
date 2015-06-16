@@ -60,6 +60,15 @@ Matrix outerProduct(const Vector &a, const Vector &b) {
   return c;
 }
 
+void outerProductFast(const Vector &a, const Vector &b, Matrix &c) {
+  assert(a.size() == c.size());
+  if (a.size() == 0) return;
+  assert(b.size() == c[0].size());
+  for (int i = 0; i < a.size(); i++)
+    for (int j = 0; j < b.size(); j++)
+      c[i][j] += a[i] * b[j];
+}
+
 Vector innerProduct(const Vector &a, const Matrix &b) {
   assert(a.size() == b.size());
   if (a.size() == 0) return Vector();
@@ -110,7 +119,6 @@ Vector operator / (const Vector &a, const double &b) {
 }
 
 Vector solveEquation(Matrix m, int n) {
-  Matrix bak = m;
   assert(m.size() >= n);
   if (m.size() == 0) return Vector();
   assert(m[0].size() > n);
@@ -131,12 +139,6 @@ Vector solveEquation(Matrix m, int n) {
     }
   }
 
-  for (int i = 0; i < n; i++) {
-    double tmp = 0;
-    for (int j = 0; j < n; j++)
-      tmp += bak[i][j] * v[j];
-    assert(fabs(tmp + bak[i][n]) < EPS);
-  }
   return v;
 }
 
@@ -147,9 +149,9 @@ class Model {
   std::vector< std::set<Edge> > face;
   std::set<Edge> edge;
   std::priority_queue< std::pair<double, Edge> > heap;
-  int faceN;
+  size_t faceN;
 
-  double edgeLen(Edge e) {
+  double edgeLen(const Edge &e) {
     return norm(vertex[e.first] - vertex[e.second]);
   }
 
@@ -162,22 +164,22 @@ public:
     faceN = 0;
   }
 
-  int getEdgeN() {
+  size_t getEdgeN() {
     return edge.size();
   }
 
-  int getVertexN() {
+  size_t getVertexN() {
     return vertex.size();
   }
 
-  int getFaceN() {
+  size_t getFaceN() {
     return faceN;
   }
 
   void selfCheck() {
     std::set<Edge> ss;
 
-    int vertexN = getVertexN();
+    size_t vertexN = getVertexN();
     for (int i = 0; i < vertexN; i++) {
       if (removed[i]) {
         assert(face[i].size() == 0);
@@ -216,7 +218,7 @@ public:
     fclose(file);
 
 
-    int vertexN = vertexIn.size();
+    size_t vertexN = vertexIn.size();
     vertex.resize(vertexN, Vector(3, 0));
     removed.resize(vertexN, false);
     face.resize(vertexN);
@@ -244,7 +246,7 @@ public:
 
   void saveToFile(std::string filename) {
     FILE *file = fopen(filename.c_str(), "w");
-    int vertexN = vertex.size();
+    size_t vertexN = vertex.size();
     std::vector<int> vertexID(vertexN, 0);
     int vertexReal = 0;
 
@@ -266,7 +268,7 @@ public:
     }
   }
 
-  std::pair<Vector, double> getPosition(Edge e) {
+  std::pair<Vector, double> getPosition(const Edge &e) {
     std::set<int> neighbor1;
     for (const auto &f : face[e.first]) {
       neighbor1.insert(f.first);
@@ -293,13 +295,13 @@ public:
       auto n = crossProduct(vertex[f.first] - vertex[e.first], vertex[f.second] - vertex[e.first]);
       n = n / norm(n);
       n.push_back(-innerProduct(vertex[e.first], n));
-      q = q + outerProduct(n, n);
+      outerProductFast(n, n, q);
     }
     for (const auto &f : face[e.second]) {
       auto n = crossProduct(vertex[f.first] - vertex[e.second], vertex[f.second] - vertex[e.second]);
       n = n / norm(n);
       n.push_back(-innerProduct(vertex[e.second], n));
-      q = q + outerProduct(n, n);
+      outerProductFast(n, n, q);
     }
 
     Vector v;
@@ -338,14 +340,14 @@ public:
     return std::make_pair(idx, pos);
   }
 
-  bool faceReverse(Edge e, Vector v1, Vector v2) {
+  bool faceReverse(const Edge &e, const Vector &v1, const Vector &v2) {
     const auto &x = vertex[e.first];
     const auto &y = vertex[e.second];
     return innerProduct(crossProduct(x - v1, y - v1), crossProduct(x - v2, y - v2)) < 0;
     return 0;
   }
 
-  void addToHeap(Edge e, double threshold) {
+  void addToHeap(const Edge &e, double threshold) {
     if (edgeLen(e) > threshold) return;
     auto pos = getPosition(e);
     heap.push(make_pair(-pos.second, e));
@@ -362,7 +364,7 @@ public:
     }
   }
 
-  void removeEdge(Edge e, Vector v, double threshold) {
+  void removeEdge(const Edge &e, const Vector &v, double threshold) {
     std::vector<Edge> toRev;
     for (const auto &f : face[e.first]) {
       if (f.first == e.second || f.second == e.second) continue;
@@ -441,7 +443,7 @@ public:
     for (auto nb : neighbor) {
       updateNeighborEdge(nb, threshold);
     }
-}
+  }
 
   void buildHeap(double threshold) {
     while (!heap.empty()) heap.pop();
@@ -450,10 +452,10 @@ public:
     }
   }
 
-  void simplify(int target, double threshold) {
+  void simplify(size_t target, double threshold) {
     buildHeap(threshold);
     while (faceN > target) {
-      printf("%c%d ", 13, faceN);
+      printf("%c%zu ", 13, faceN);
       auto e = selectEdge(threshold);
       if (e.first != make_pair(-1, -1))
         removeEdge(e.first, e.second, threshold);
@@ -496,12 +498,12 @@ int main(int argc, char **argv) {
 
   model.loadFromFile(inputModelFileName);
 
-  int all = model.getFaceN();
-  int simple = all * simplifyRate;
+  size_t all = model.getFaceN();
+  size_t simple = all * simplifyRate;
 
-  printf("vertex: %d\n", model.getVertexN());
-  printf("edge: %d\n", model.getEdgeN());
-  printf("simple / all = %d / %d\n", simple, all);
+  printf("vertex: %zu\n", model.getVertexN());
+  printf("edge: %zu\n", model.getEdgeN());
+  printf("simple / all = %zu / %zu\n", simple, all);
   model.simplify(simple, threshold);
 
   model.saveToFile(outputModelFileName);
