@@ -8,6 +8,7 @@
 #include <algorithm>
 #define BUFFER_SIZE 1024
 #define INFD 1e8
+#define EPSLOOSE 0.1
 #define EPS 1e-8
 #define TOLERATE 2.0
 using std::min;
@@ -165,7 +166,7 @@ Vector solveEquation(Matrix m, int n) {
   for (int i = 0; i < n; i++) {
     for (int j = i + 1; j < n; j++)
       if (fabs(m[i][i]) < fabs(m[j][i])) m[i].swap(m[j]);
-    if (fabs(m[i][i]) < EPS) throw 200;
+    if (fabs(m[i][i]) < EPSLOOSE) throw 200;
     m[i] = m[i] / m[i][i];
     for (int j = i + 1; j < n; j++)
       m[j] = m[j] - m[j][i] * m[i];
